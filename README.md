@@ -1,5 +1,5 @@
 # Drakborgen
-Turning the 1987 classic swedish boardgame Drakborgen (dragonquest) by Alga into a digital form using databases and python.
+**Turning the 1987 classic swedish boardgame Drakborgen by Alga into a digital form using databases and python.**
 ![Drakborgen](https://user-images.githubusercontent.com/45418971/158431025-39b9394f-74a8-4740-a746-b915d3716a19.png)
 
 Project for the course: Databases and datamodelling at Linnéuniversitetet
