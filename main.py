@@ -1,6 +1,7 @@
 import csv
 from mysql.connector import errorcode
 import mysql.connector
+from random import randrange
 
 connection_args = {
     "host": "localhost",
@@ -9,19 +10,47 @@ connection_args = {
 }
 DB_NAME = "drakborgen"
 
-def new_player(cursor):
-    name = input("Enter the players name")
-    age = input("Enter the player age")
+def numberofplayers(cursor, mydb):
+    string = "CREATE VIEW Current_players AS SELECT players.name FROM players WHERE players.hero <> 'NULL'"
+    cursor.execute(string)
+    ans = str(cursor.fetchall())
+
+def new_player(cursor, mydb):
+    name = input("Enter your name: ")
+    age = input("Enter your age: ")
+    gender = input("Enter your gender: ")
+
     while True:
-        hero = input("Enter a number 1-4 to pik a hero")
-        string = "SELECT name FROM players WHERE name ='" + hero + "'"
-        print(string)
+        ans = input("Enter number between 1 and 4: ")
+        string = "SELECT players.name FROM players WHERE players.hero='"+ans+"'"
         cursor.execute(string)
-        result = str(cursor.fetchall())
-        print(result)
+        try:
+            player = str(cursor.fetchall()[0][0])
+            print("This hero belongs to " + player)
+        except:
+            string = "SELECT name FROM heroes WHERE id ='"+ans+"'"
+            cursor.execute(string)
+            hero = str(cursor.fetchall()[0][0])
+            id = ans
+            question = input(hero + " has not been picked by anyone. Do you want him? y/n")
+            if question == "y":
+                print("You choose " + hero + "As your hero")
+                string = "INSERT INTO players values(%s,%s,%s,%s)"
+                ans = (name, age, gender, id)
+                cursor.execute(string, ans)
+                mydb.commit()
+                break
+            else:
+                continue
 
+def boardstate():
+    pass
 
-
+def playerherolist(cursor):
+    string = "SELECT heroes.name, players.name FROM heroes JOIN players ON players.hero = heroes.id"
+    cursor.execute(string)
+    result = str(cursor.fetchall())
+    print(result)
 
 def create_database(cursor, mydb):
     try:
@@ -29,15 +58,50 @@ def create_database(cursor, mydb):
     except mysql.connector.Error as err:
         print("Faild to create database {}".format(err))
         exit(1)
+def avgherohealth(cursor):
+    string = "SELECT AVG(heroes.health) AS avgHp FROM heroes"
+    cursor.execute(string)
+    result = str(cursor.fetchall())
+    print(result)
 
-def menu(cursor):
-    print("DRAKBORGEN_______________")
+def newround(cursor,mydb):
+    x = input("input an x coordinate")
+    y = input("input a y coordinate")
+    rnd = str(randrange(71))
+    room = "SELECT * FROM room JOIN roomcard WHERE room.id=?"
+
+    roomcard = "SELECT * FROM roomcard WHERE roomcard.id='"+str(randrange(71))+"'"
+    cursor.execute(roomcard)
+    event = str(cursor.fetchall()[0][2])
+    cursor.execute(room)
+    room = str(cursor.fetchall()[0][0])
+    newroom = "INSERT INTO room WHERE VALUES (%s)"
+    add = (event)
+    room = str(cursor.fetchall())
+    cursor.execute(newroom, add)
+    newroom = str(cursor.fetchall())
+    print(newroom)
+
+
+    print(event)
+    print(room)
+
+def menu(cursor,mydb):
+    print("_______________DRAKBORGEN_______________")
     print("1. Create new player")
     print("2. List all players and their hero")
-    print("3 Do a round")
+    print("3. Check number of players")
+    print("4. Average health")
+
     ans = input()
     if ans == "1":
-        new_player(cursor)
+        new_player(cursor, mydb)
+    if ans == "2":
+        playerherolist(cursor)
+    if ans == "3":
+        numberofplayers(cursor, mydb)
+    if ans == "4":
+        avgherohealth(cursor)
 
 
 def create_tables(cursor, mydb):
@@ -91,18 +155,14 @@ def create_tables(cursor, mydb):
             else:
                 print("here")
                 print(err.msg)
-        else:
-            print("OK")
 
     files = ['csv/Drakborgen - players.csv', 'csv/Drakborgen - heroes.csv', 'csv/Drakborgen - room.csv', 'csv/Drakborgen - roomcard.csv']
     i = 0
     for x in datasheets:
-        print(x)
         file = open(files[i])
         csv_data = csv.reader(file)
         i += 1
         for row in csv_data:
-            print(row)
             cursor.execute(x, row)
             mydb.commit()
 
@@ -120,7 +180,8 @@ def main():
             print("Database {} created succesfully.".format(DB_NAME))
             mydb.database = DB_NAME
             create_tables(cursor, mydb)
-    menu(cursor)
+    while True:
+        menu(cursor,mydb)
 
 
 if __name__ == '__main__':
